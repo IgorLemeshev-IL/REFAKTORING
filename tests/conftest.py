@@ -1,3 +1,4 @@
+import os
 import pytest
 from unittest.mock import Mock, patch
 
@@ -128,3 +129,13 @@ def mock_requests_get_failure():
         mock_response.raise_for_status.side_effect = Exception("API Error")
         mock_get.return_value = mock_response
         yield mock_get
+
+
+# ========== MOCK ПЕРЕМЕННЫХ ОКРУЖЕНИЯ ==========
+
+@pytest.fixture
+def mock_env_api_key():
+    """Мок для переменной окружения CMC_API_KEY"""
+    with patch.dict(os.environ, {"CMC_API_KEY": "test-api-key-123"}):
+        yield
+        

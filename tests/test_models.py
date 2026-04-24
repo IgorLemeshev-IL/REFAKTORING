@@ -2,9 +2,58 @@ import pytest
 from models.crypto_asset import CryptoAsset
 
 
+class TestCryptoAssetValidation:
+    """Тесты валидации данных в __init__"""
+
+    def test_empty_name_raises_error(self):
+        """Пустое имя вызывает ValueError"""
+        with pytest.raises(ValueError, match="name"):
+            CryptoAsset("", "BTC", 100.0, 1.0)
+
+    def test_empty_symbol_raises_error(self):
+        """Пустой символ вызывает ValueError"""
+        with pytest.raises(ValueError, match="symbol"):
+            CryptoAsset("Bitcoin", "", 100.0, 1.0)
+
+    def test_none_name_raises_error(self):
+        """None вместо имени вызывает ValueError"""
+        with pytest.raises(ValueError, match="name"):
+            CryptoAsset(None, "BTC", 100.0, 1.0)
+
+    def test_none_symbol_raises_error(self):
+        """None вместо символа вызывает ValueError"""
+        with pytest.raises(ValueError, match="symbol"):
+            CryptoAsset("Bitcoin", None, 100.0, 1.0)
+
+    def test_invalid_price_type_raises_error(self):
+        """Цена строкой вызывает TypeError"""
+        with pytest.raises(TypeError, match="price"):
+            CryptoAsset("Bitcoin", "BTC", "invalid", 1.0)
+
+    def test_invalid_change_24h_type_raises_error(self):
+        """change_24h строкой вызывает TypeError"""
+        with pytest.raises(TypeError, match="change_24h"):
+            CryptoAsset("Bitcoin", "BTC", 100.0, "invalid")
+
+    @pytest.mark.parametrize("name,symbol,price,change", [
+        ("Bitcoin", "BTC", 50000.0, 2.5),
+        ("Ethereum", "ETH", 3000.0, -1.2),
+        ("A" * 100, "X", 0.0001, 999.9),
+        ("Test", "TST-USDT", 1.0, 0.0),
+        ("ビットコイン", "₿", 50000.0, 2.5),
+    ])
+    def test_valid_data_passes_validation(self, name, symbol, price, change):
+        """Корректные данные проходят валидацию"""
+        asset = CryptoAsset(name=name, symbol=symbol, price=price, change_24h=change)
+        assert asset.name == name
+        assert asset.symbol == symbol
+        assert asset.price == price
+        assert asset.change_24h == change
+
+
 class TestCryptoAssetInit:
     """Тесты конструктора __init__"""
-    
+
     def test_create_valid_asset(self):
         """Создание актива с корректными данными"""
         asset = CryptoAsset(
@@ -19,10 +68,9 @@ class TestCryptoAssetInit:
         assert asset.change_24h == 2.5
 
     @pytest.mark.parametrize("name,symbol,price,change", [
-        ("Bitcoin", "BTC", 50000.0, 2.5),      # обычный случай
-        ("Ethereum", "ETH", 3000.0, -1.2),     # отрицательное изменение
-        ("", "", 0.0, 0.0),                    # пустые строки и нули
-        ("A" * 100, "X", 0.0001, 999.9),       # длинное имя, маленькая цена
+        ("Bitcoin", "BTC", 50000.0, 2.5),
+        ("Ethereum", "ETH", 3000.0, -1.2),
+        ("A" * 100, "X", 0.0001, 999.9),
     ])
     def test_create_asset_parametrized(self, name, symbol, price, change):
         """Параметризованный тест создания актива"""
@@ -42,7 +90,7 @@ class TestCryptoAssetInit:
 
 class TestCryptoAssetMagicMethods:
     """Тесты магических методов __str__, __repr__, __lt__, __gt__"""
-    
+
     def test_str_method(self, sample_asset):
         """__str__ должен возвращать читаемое представление"""
         result = str(sample_asset)
@@ -64,7 +112,6 @@ class TestCryptoAssetMagicMethods:
             price=price,
             change_24h=change
         )
-        # Проверяем только часть с ценой и процентами (конец строки)
         str_result = str(asset)
         assert f"${price:.2f}" in str_result
         assert f"{change:+.2f}%" in str_result
@@ -82,7 +129,7 @@ class TestCryptoAssetMagicMethods:
         """__lt__: актив с меньшим change_24h должен быть меньше"""
         btc = CryptoAsset("Bitcoin", "BTC", 50000.0, 2.5)
         eth = CryptoAsset("Ethereum", "ETH", 3000.0, -1.2)
-        assert eth < btc  # -1.2 < 2.5
+        assert eth < btc
         assert not (btc < eth)
 
     def test_lt_method_equal(self):
@@ -94,7 +141,6 @@ class TestCryptoAssetMagicMethods:
 
     def test_lt_method_not_implemented(self, sample_asset):
         """__lt__: сравнение с другим типом возвращает NotImplemented"""
-        # Это вызовет TypeError при попытке сортировки
         with pytest.raises(TypeError):
             sample_asset < "not an asset"
 
@@ -102,7 +148,7 @@ class TestCryptoAssetMagicMethods:
         """__gt__: актив с большим change_24h должен быть больше"""
         btc = CryptoAsset("Bitcoin", "BTC", 50000.0, 2.5)
         eth = CryptoAsset("Ethereum", "ETH", 3000.0, -1.2)
-        assert btc > eth  # 2.5 > -1.2
+        assert btc > eth
         assert not (eth > btc)
 
     def test_gt_method_equal(self):
@@ -120,7 +166,7 @@ class TestCryptoAssetMagicMethods:
 
 class TestCryptoAssetEdgeCases:
     """Тесты граничных случаев"""
-    
+
     def test_negative_price(self):
         """Отрицательная цена (теоретически невозможна, но проверяем)"""
         asset = CryptoAsset("Test", "TST", -100.0, 0.0)
@@ -139,7 +185,7 @@ class TestCryptoAssetEdgeCases:
         assert asset.change_24h == -1e-10
 
     def test_unicode_in_name(self):
-        """Юникод в названии (например, для неанглийских монет)"""
+        """Юникод в названии"""
         asset = CryptoAsset("ビットコイン", "₿", 50000.0, 2.5)
         assert asset.name == "ビットコイン"
         assert asset.symbol == "₿"
@@ -152,19 +198,19 @@ class TestCryptoAssetEdgeCases:
 
 class TestCryptoAssetSorting:
     """Тесты сортировки с использованием __lt__ и __gt__"""
-    
+
     def test_sort_ascending(self, sample_assets_list):
         """Сортировка по возрастанию change_24h (losers)"""
         sorted_assets = sorted(sample_assets_list)
         changes = [a.change_24h for a in sorted_assets]
         assert changes == sorted(changes)
-        assert sorted_assets[0].change_24h == -3.1  # ADA
-        assert sorted_assets[-1].change_24h == 5.8  # SOL
+        assert sorted_assets[0].change_24h == -3.1
+        assert sorted_assets[-1].change_24h == 5.8
 
     def test_sort_descending(self, sample_assets_list):
         """Сортировка по убыванию change_24h (gainers)"""
         sorted_assets = sorted(sample_assets_list, reverse=True)
         changes = [a.change_24h for a in sorted_assets]
         assert changes == sorted(changes, reverse=True)
-        assert sorted_assets[0].change_24h == 5.8  # SOL
-        assert sorted_assets[-1].change_24h == -3.1  # ADA
+        assert sorted_assets[0].change_24h == 5.8
+        assert sorted_assets[-1].change_24h == -3.1

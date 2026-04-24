@@ -96,6 +96,12 @@ class TestCoinMarketCapProvider:
         provider = CoinMarketCapProvider()
         assert provider.api_key == "test-api-key-123"
     
+    # ========== НОВЫЙ ТЕСТ ==========
+    def test_get_assets_inherits_from_crypto_provider(self):
+        """CoinMarketCapProvider ДОЛЖЕН наследоваться от CryptoProvider"""
+        provider = CoinMarketCapProvider()
+        assert isinstance(provider, CryptoProvider)
+    
     def test_get_assets_missing_api_key(self):
         """Ошибка если API ключ не установлен"""
         with patch.dict(os.environ, {}, clear=True):
@@ -147,6 +153,15 @@ class TestProviderPolymorphism:
         assert callable(cg.get_assets)
         assert callable(cmc.get_assets)
     
+    # ========== НОВЫЙ ТЕСТ ==========
+    def test_both_providers_inherit_from_crypto_provider(self):
+        """Оба провайдера наследуются от CryptoProvider"""
+        cg = CoinGeckoProvider()
+        cmc = CoinMarketCapProvider()
+        
+        assert isinstance(cg, CryptoProvider)
+        assert isinstance(cmc, CryptoProvider)
+    
     def test_providers_return_same_structure(self, mock_env_api_key):
         """Оба провайдера возвращают данные в одинаковом формате (list[CryptoAsset])"""
         
@@ -188,15 +203,10 @@ class TestProviderPolymorphism:
             cmc = CoinMarketCapProvider()
             cmc_assets = cmc.get_assets()
         
-        # Оба возвращают список
         assert isinstance(cg_assets, list)
         assert isinstance(cmc_assets, list)
-        
-        # Оба возвращают CryptoAsset объекты
         assert all(isinstance(a, CryptoAsset) for a in cg_assets)
         assert all(isinstance(a, CryptoAsset) for a in cmc_assets)
-        
-        # Одинаковое количество
         assert len(cg_assets) == len(cmc_assets) == 1
     
     def test_provider_substitution(self, mock_requests_get_coingecko):

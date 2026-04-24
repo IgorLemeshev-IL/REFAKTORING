@@ -10,9 +10,6 @@ def run(
     output: str = "console",
     top: int = 3
 ):
-    # 🔥 FIX: Typer передаёт строки
-    top = int(top)
-
     # 1. provider
     provider = ProviderFactory.create(source)
     assets = provider.get_assets()

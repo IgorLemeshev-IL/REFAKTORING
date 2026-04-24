@@ -260,3 +260,31 @@ class TestCryptoPortfolioEdgeCases:
         assert len(portfolio) == 2
         gainers = portfolio.top_gainers(2)
         assert len(gainers) == 2
+
+    def test_getitem_by_index(self, sample_assets_list):
+        """Доступ к активу по индексу"""
+        portfolio = CryptoPortfolio(sample_assets_list)
+        assert portfolio[0].symbol == "BTC"
+        assert portfolio[2].symbol == "SOL"
+
+    def test_getitem_negative_index(self, sample_assets_list):
+        """Доступ по отрицательному индексу"""
+        portfolio = CryptoPortfolio(sample_assets_list)
+        assert portfolio[-1].symbol == "XRP"
+
+    def test_getitem_out_of_range(self, sample_assets_list):
+        """IndexError при выходе за пределы"""
+        portfolio = CryptoPortfolio(sample_assets_list)
+        with pytest.raises(IndexError):
+            _ = portfolio[100]
+
+    def test_total_volume(self, sample_assets_list):
+        """Суммарный объём всех активов"""
+        portfolio = CryptoPortfolio(sample_assets_list)
+        expected_volume = 50000.0 + 3000.0 + 100.0 + 0.5 + 0.8
+        assert portfolio.total_volume() == expected_volume
+
+    def test_total_volume_empty(self):
+        """Объём пустого портфеля = 0"""
+        portfolio = CryptoPortfolio([])
+        assert portfolio.total_volume() == 0.0
